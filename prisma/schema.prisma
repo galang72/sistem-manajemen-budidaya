@@ -1,0 +1,124 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String             @id @default(uuid())
+  email        String             @unique
+  password     String
+  name         String
+  farmName     String             @default("Papap Fish Farm Sukses Makmur")
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  ponds        Pond[]
+  cycles       CultivationCycle[]
+  transactions Transaction[]
+}
+
+model Pond {
+  id          String             @id @default(uuid())
+  userId      String
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  size        String
+  capacity    Int
+  type        String
+  status      String             @default("Kosong") // "Kosong", "Digunakan", "Perawatan"
+  notes       String?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  cycles      CultivationCycle[]
+  mortalities FishMortality[]
+  harvests    Harvest[]
+}
+
+model CultivationCycle {
+  id                  String          @id @default(uuid())
+  userId              String
+  user                User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pondId              String
+  pond                Pond            @relation(fields: [pondId], references: [id])
+  code                String          // e.g. "Lele-2026-001"
+  startDate           DateTime
+  harvestEstimateDate DateTime?
+  endDate             DateTime?
+  initialFishCount    Int
+  seedPricePerFish    Float
+  totalSeedCost       Float
+  seedSize            String          // e.g. "5-7 cm"
+  feedType            String          // e.g. "PF 1000 & 781-1"
+  status              String          @default("Aktif") // "Aktif", "Selesai", "Dibatalkan"
+  notes               String?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  mortalities         FishMortality[]
+  harvests            Harvest[]
+  feedRecords         FeedRecord[]
+  transactions        Transaction[]
+}
+
+model FishMortality {
+  id        String           @id @default(uuid())
+  cycleId   String
+  cycle     CultivationCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  pondId    String
+  pond      Pond             @relation(fields: [pondId], references: [id])
+  date      DateTime         @default(now())
+  count     Int
+  cause     String           // "Kualitas Air", "Penyakit / Jamur", "Kanibalisme", "Suhu Ekstrem", "Pakan Berlebih", "Lainnya"
+  notes     String?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+}
+
+model Harvest {
+  id            String           @id @default(uuid())
+  cycleId       String
+  cycle         CultivationCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  pondId        String
+  pond          Pond             @relation(fields: [pondId], references: [id])
+  date          DateTime         @default(now())
+  fishCount     Int
+  totalWeightKg Float
+  pricePerKg    Float
+  totalRevenue  Float
+  buyerName     String
+  notes         String?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+}
+
+model FeedRecord {
+  id        String           @id @default(uuid())
+  cycleId   String
+  cycle     CultivationCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  date      DateTime         @default(now())
+  feedType  String
+  weightKg  Float
+  pricePerKg Float
+  totalCost Float
+  notes     String?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+}
+
+model Transaction {
+  id        String            @id @default(uuid())
+  userId    String
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cycleId   String?
+  cycle     CultivationCycle? @relation(fields: [cycleId], references: [id], onDelete: SetNull)
+  type      String            // "INCOME", "EXPENSE"
+  category  String
+  source    String            // "Kas Tunai", "Transfer Bank", "Pengepul", dll
+  amount    Float
+  date      DateTime          @default(now())
+  notes     String?
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+}
